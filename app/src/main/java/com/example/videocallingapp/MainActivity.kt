@@ -6,12 +6,9 @@ import android.util.Log
 import android.view.SurfaceView
 import android.view.View
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.videocallingapp.databinding.ActivityMainBinding
 import io.agora.rtc2.*
 import io.agora.rtc2.video.VideoCanvas
@@ -22,7 +19,7 @@ class MainActivity : AppCompatActivity() {
 
     private val appID = "a85185504c954b868ed9fd410564d7c7"
     private val channelName = "sample_video_call_app"
-    private val token = "007eJxTYEgNvZPJJ3HnmFitc5wy39ovlbWHzwss4iwvlN3aP4vp0wkFhkQLU0MLU1MDk2RLU5MkCzOL1BTLtBQTQwNTM5MU82Tzcw/XpjcEMjKEnj7MzMgAgSC+KENxYm5BTmp8WWZKan58cmJOTnxiQQEDAwBbriYw"
+    private val token = "007eJxTYPj96Maj2Y+XTUtdWlcZq5ptre2xp2j5ZLcY1fO7XjGKvNyqwJBoYWpoYWpqYJJsaWqSZGFmkZpimZZiYmhgamaSYp5snjRtQ3pDICPD3sLTzIwMEAjiizIUJ+YW5KTGl2WmpObHJyfm5MQnFhQwMAAAYzEoJQ=="
     private val uid = 0
 
     private var isJoined = false
@@ -34,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     private val REQUESTED_PERMISSION = arrayOf(
         android.Manifest.permission.RECORD_AUDIO,
         android.Manifest.permission.CAMERA,
-        android.Manifest.permission.INTERNET  // Added Internet permission
+        android.Manifest.permission.INTERNET
     )
 
     private fun checkPermissions(): Boolean {
@@ -56,7 +53,7 @@ class MainActivity : AppCompatActivity() {
                 mEventHandler = mRtcEngineEventHandler
             }
             agoraEngine = RtcEngine.create(config)
-            // Configure the video encoding parameters
+
             agoraEngine?.apply {
                 enableVideo()
                 setVideoEncoderConfiguration(
@@ -75,7 +72,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -85,18 +81,8 @@ class MainActivity : AppCompatActivity() {
 
         setUpVideoSdkEngine()
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-
-        binding.joinButton.setOnClickListener {
-            joinCall()
-        }
-        binding.leaveButton.setOnClickListener {
-            leaveCall()
-        }
+        binding.joinButton.setOnClickListener { joinCall() }
+        binding.leaveButton.setOnClickListener { leaveCall() }
     }
 
     override fun onDestroy() {
@@ -111,14 +97,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun joinCall() {
         if (checkPermissions()) {
+            setUpLocalVideo() // Ensure local video is set up before joining
+
             val options = ChannelMediaOptions().apply {
                 channelProfile = Constants.CHANNEL_PROFILE_COMMUNICATION
                 clientRoleType = Constants.CLIENT_ROLE_BROADCASTER
-                publishCameraTrack = true  // Ensure camera track is published
-                publishMicrophoneTrack = true  // Ensure audio track is published
+                publishCameraTrack = true
+                publishMicrophoneTrack = true
             }
 
-            setUpLocalVideo()
             localSurfaceView?.visibility = View.VISIBLE
             agoraEngine?.startPreview()
             agoraEngine?.joinChannel(token, channelName, uid, options)
@@ -135,14 +122,12 @@ class MainActivity : AppCompatActivity() {
         } else {
             agoraEngine?.leaveChannel()
             makeToast("You left the channel")
-            if (remoteSurfaceView?.parent != null) {
-                binding.remoteVideo.removeAllViews()
-            }
-            if (localSurfaceView?.parent != null) {
-                binding.localUserVideo.removeAllViews()
-            }
+            binding.remoteVideo.removeAllViews()
+            binding.localUserVideo.removeAllViews()
+
             remoteSurfaceView?.visibility = View.GONE
             localSurfaceView?.visibility = View.GONE
+
             remoteSurfaceView = null
             localSurfaceView = null
             isJoined = false
@@ -168,12 +153,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Add connection state callback
         override fun onConnectionStateChanged(state: Int, reason: Int) {
             makeToast("Connection state changed: $state, reason: $reason")
         }
 
-        // Add error callback
         override fun onError(err: Int) {
             makeToast("Error occurred: $err")
         }
@@ -181,11 +164,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpRemoteVideo(uid: Int) {
         runOnUiThread {
-            // Remove any existing remote view
             binding.remoteVideo.removeAllViews()
 
             remoteSurfaceView = SurfaceView(baseContext).apply {
-                setZOrderMediaOverlay(true)
+                setZOrderMediaOverlay(false) // Ensure it's behind local video
             }
             binding.remoteVideo.addView(remoteSurfaceView)
 
@@ -194,7 +176,7 @@ class MainActivity : AppCompatActivity() {
             agoraEngine?.setupRemoteVideo(
                 VideoCanvas(
                     remoteSurfaceView,
-                    VideoCanvas.RENDER_MODE_FIT,  // Changed to FIT mode
+                    VideoCanvas.RENDER_MODE_HIDDEN,
                     uid
                 )
             )
@@ -205,7 +187,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpLocalVideo() {
         runOnUiThread {
-            // Remove any existing local view
             binding.localUserVideo.removeAllViews()
 
             localSurfaceView = SurfaceView(baseContext)
@@ -216,12 +197,10 @@ class MainActivity : AppCompatActivity() {
             agoraEngine?.setupLocalVideo(
                 VideoCanvas(
                     localSurfaceView,
-                    VideoCanvas.RENDER_MODE_FIT,  // Changed to FIT mode
+                    VideoCanvas.RENDER_MODE_HIDDEN,
                     uid
                 )
             )
         }
     }
 }
-
-//this is a test to check if the git repo is working and push in the right file or not
