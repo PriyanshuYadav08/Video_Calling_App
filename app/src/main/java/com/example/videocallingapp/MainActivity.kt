@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
 
             agoraEngine?.apply {
                 enableVideo()
+                setChannelProfile(Constants.CHANNEL_PROFILE_COMMUNICATION)
                 setVideoEncoderConfiguration(
                     VideoEncoderConfiguration(
                         VideoEncoderConfiguration.VD_640x360,
@@ -162,34 +163,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setUpRemoteVideo(uid: Int) {
-        runOnUiThread {
-            binding.remoteVideo.removeAllViews()
-
-            remoteSurfaceView = SurfaceView(baseContext).apply {
-                setZOrderMediaOverlay(false) // Ensure it's behind local video
-            }
-            binding.remoteVideo.addView(remoteSurfaceView)
-
-            makeToast("Setting up remote video for UID: $uid")
-
-            agoraEngine?.setupRemoteVideo(
-                VideoCanvas(
-                    remoteSurfaceView,
-                    VideoCanvas.RENDER_MODE_HIDDEN,
-                    uid
-                )
-            )
-
-            remoteSurfaceView!!.visibility = View.VISIBLE
-        }
-    }
-
     private fun setUpLocalVideo() {
         runOnUiThread {
             binding.localUserVideo.removeAllViews()
 
-            localSurfaceView = SurfaceView(baseContext)
+            localSurfaceView = SurfaceView(baseContext).apply {
+                setZOrderMediaOverlay(true)
+            }
             binding.localUserVideo.addView(localSurfaceView)
 
             makeToast("Setting up local video")
@@ -201,6 +181,27 @@ class MainActivity : AppCompatActivity() {
                     uid
                 )
             )
+        }
+    }
+
+    private fun setUpRemoteVideo(uid: Int) {
+        runOnUiThread {
+            binding.remoteVideo.removeAllViews()
+
+            remoteSurfaceView = SurfaceView(baseContext).apply {
+                setZOrderMediaOverlay(false)
+            }
+            binding.remoteVideo.addView(remoteSurfaceView)
+
+            agoraEngine?.setupRemoteVideo(
+                VideoCanvas(
+                    remoteSurfaceView,
+                    VideoCanvas.RENDER_MODE_HIDDEN,
+                    uid
+                )
+            )
+
+            remoteSurfaceView!!.visibility = View.VISIBLE
         }
     }
 }
