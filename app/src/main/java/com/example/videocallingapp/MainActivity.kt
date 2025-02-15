@@ -223,3 +223,5 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
+//this is a test to check if the git repo is working and push in the right file or not
