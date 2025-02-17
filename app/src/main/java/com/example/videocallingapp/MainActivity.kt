@@ -27,15 +27,15 @@ class MainActivity : AppCompatActivity() {
     private var localSurfaceView: SurfaceView? = null
     private var remoteSurfaceView: SurfaceView? = null
 
-    private val PERMISSION_ID = 22
-    private val REQUESTED_PERMISSION = arrayOf(
+    private val permission = 22
+    private val requested = arrayOf(
         android.Manifest.permission.RECORD_AUDIO,
         android.Manifest.permission.CAMERA,
         android.Manifest.permission.INTERNET
     )
 
     private fun checkPermissions(): Boolean {
-        return REQUESTED_PERMISSION.all {
+        return requested.all {
             ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }
     }
@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         if (!checkPermissions()) {
-            ActivityCompat.requestPermissions(this, REQUESTED_PERMISSION, PERMISSION_ID)
+            ActivityCompat.requestPermissions(this, requested, permission)
         }
 
         setUpVideoSdkEngine()
